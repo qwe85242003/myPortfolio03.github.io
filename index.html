@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+	<link rel="stylesheet" href="css/all.min.css">
+	
+    <link rel="stylesheet" href="css/leaflet.css"><!-- leaflet -->
+    <link rel="stylesheet" href="css/MarkerCluster.css">
+	<script src="js/leaflet.js"></script>
+	<script src="js/leaflet.markercluster.js"></script>
+	<script src="js/leaflet-color-markers.js"></script>
+
+	<style>
+
+		.map_mask{
+			height: 900px;/*幫地圖設置高度*/
+		}
+
+		
+
+		.marker-cluster-large{
+			width: 100px;
+			height: 100px;
+			-moz-border-radius: 50px;
+			-webkit-border-radius: 50px;
+			border-radius: 50px;
+			background-color: rgba(235,100,0,0.6);
+			box-shadow:0px 0px 5px 4px rgba(235,100,0,0.5);
+			
+			text-align:center;line-height:40px;
+			font-size:16px;
+		}
+		.marker-cluster-medium{
+			width: 100px;
+			height: 100px;
+			-moz-border-radius: 50px;
+			-webkit-border-radius: 50px;
+			border-radius: 50px;
+			background-color: rgba(240,227,56,0.7);
+			box-shadow:0px 0px 5px 4px rgba(240,227,56,0.5);
+	
+			text-align:center;line-height:40px;
+			font-size:16px;
+		}		
+		.marker-cluster-small{
+			width: 100px;
+			height: 100px;
+			-moz-border-radius: 50px;
+			-webkit-border-radius: 50px;
+			border-radius: 50px;				
+			background-color: rgba(102,174,10,0.7);
+			box-shadow:0px 0px 5px 4px rgba(102,174,10,0.5);/*圓圈陰影*/	
+
+			text-align:center;line-height:40px;/*文字置中*/
+			font-size:16px;/*文字大小*/
+
+		}
+
+
+
+	</style>
+
+    <title>Hello, world!</title>
+  </head>
+  <body>
+
+    <div id="map" class="map_mask"></div>
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+	<script>
+
+		$(function(){
+			
+				$.ajax({
+					type:"GET",
+					url:"js/maskmap.json",
+					dataType:"json",
+					success:show_data,
+					error:function(){
+						alert("data_get error!!");
+					}
+
+
+				});
+
+		});
+
+
+		//https://leafletjs.com/index.html - Overview
+		var map = L.map('map').setView([24.172048,120.610742], 13);  
+
+		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+		}).addTo(map);
+
+		var markers = new L.markerClusterGroup().addTo(map);
+
+		//---剩餘數量分區---
+		var mask_safe = new Array();
+		var mask_warning = new Array();
+		var mask_danger = new Array();
+
+
+		function show_data(data){
+			// console.log(data.features);
+			// console.log(data.features[0].properties.mask_adult); //剩餘大人口罩
+	
+			for(i=0;i<data.features.length;i++){
+				var lat = data.features[i].geometry.coordinates[1]; //經度
+				var lng = data.features[i].geometry.coordinates[0]; //緯度
+				var name = data.features[i].properties.name; //
+				var tel = data.features[i].properties.phone; 
+				var addr = data.features[i].properties.address;
+				var uptime = data.features[i].properties.updated; 
+
+
+				// 製作maker
+				// markers.addLayer(L.marker([lat,lng],{icon: greenIcon})
+				// 	.bindPopup(name+'<br>'+name));
+
+				//------依剩餘數量分區maker-------
+				var mask_num = data.features[i].properties.mask_adult;
+
+				if(mask_num>=200){
+					mask_safe.push(data.features[i]);
+					markers.addLayer(L.marker([lat,lng],{icon: greenIcon})
+					.bindPopup('<h3 class="font-weight-bold" style="font-size: 24px;">'+name+'</h3><p class="text-success font-weight-bold" style="font-size: 20px;">剩餘數量:'+mask_num+'</p>電話:'+tel+'<a href="tel:'+tel+'"> <i class="fas fa-phone-alt"></i></a><br>地址:'+addr+'<a href="http://maps.google.com/?q='+name+'">>></a><br>更新時間:'+uptime)
+					);					
+				}else if(mask_num<200 && mask_num>50){
+					mask_warning.push(data.features[i]);
+					markers.addLayer(L.marker([lat,lng],{icon: yellowIcon})
+					.bindPopup('<h3 class="font-weight-bold" style="font-size: 24px;">'+name+'</h3><p class="text-warning font-weight-bold" style="font-size: 20px;">剩餘數量:'+mask_num+'</p>電話:'+tel+'<a href="tel:'+tel+'"> <i class="fas fa-phone-alt"></i></a><br>地址:'+addr+'<a href="http://maps.google.com/?q='+name+'">>></a><br>更新時間:'+uptime)
+					);	
+				}else{
+					mask_danger.push(data.features[i]);
+					markers.addLayer(L.marker([lat,lng],{icon: redIcon})
+					.bindPopup('<h3 class="font-weight-bold" style="font-size: 24px;">'+name+'</h3><p class="text-danger font-weight-bold" style="font-size: 20px;">剩餘數量:'+mask_num+'</p>電話:'+tel+'<a href="tel:'+tel+'"> <i class="fas fa-phone-alt"></i></a><br>地址:'+addr+'<a href="http://maps.google.com/?q='+name+'">>></a><br>更新時間:'+uptime)
+					);						
+				}
+					
+
+			}
+			
+				// console.log(mask_safe);   //剩餘數量safe的區域(筆數、DATA)
+				// console.log(mask_warning); 
+				// console.log(mask_danger);
+		}
+
+	</script>
+
+
+  </body>
+</html>
